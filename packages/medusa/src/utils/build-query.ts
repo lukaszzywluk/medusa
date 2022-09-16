@@ -1,10 +1,17 @@
+import { ExtendedFindConfig, FindConfig } from "../types/common"
 import {
-  ExtendedFindConfig,
-  FindConfig,
-  Selector,
-  Writable,
-} from "../types/common"
-import { FindOperator, In, IsNull, Raw } from "typeorm"
+  FindManyOptions,
+  FindOperator,
+  FindOptionsRelations,
+  FindOptionsSelect,
+  FindOptionsWhere,
+  In,
+  IsNull,
+  LessThan,
+  LessThanOrEqual,
+  MoreThan,
+  MoreThanOrEqual,
+} from "typeorm"
 
 /**
  * Used to build TypeORM queries.
@@ -15,74 +22,9 @@ import { FindOperator, In, IsNull, Raw } from "typeorm"
 export function buildQuery<TWhereKeys, TEntity = unknown>(
   selector: TWhereKeys,
   config: FindConfig<TEntity> = {}
-): ExtendedFindConfig<TEntity, TWhereKeys> {
-  const build = (obj: Selector<TEntity>): Partial<Writable<TWhereKeys>> => {
-    return Object.entries(obj).reduce((acc, [key, value]: any) => {
-      // Undefined values indicate that they have no significance to the query.
-      // If the query is looking for rows where a column is not set it should use null instead of undefined
-      if (typeof value === "undefined") {
-        return acc
-      }
-
-      if (value === null) {
-        acc[key] = IsNull()
-        return acc
-      }
-
-      const subquery: {
-        operator: "<" | ">" | "<=" | ">="
-        value: unknown
-      }[] = []
-
-      switch (true) {
-        case value instanceof FindOperator:
-          acc[key] = value
-          break
-        case Array.isArray(value):
-          acc[key] = In([...(value as unknown[])])
-          break
-        case value !== null && typeof value === "object":
-          Object.entries(value).map(([modifier, val]) => {
-            switch (modifier) {
-              case "lt":
-                subquery.push({ operator: "<", value: val })
-                break
-              case "gt":
-                subquery.push({ operator: ">", value: val })
-                break
-              case "lte":
-                subquery.push({ operator: "<=", value: val })
-                break
-              case "gte":
-                subquery.push({ operator: ">=", value: val })
-                break
-              default:
-                acc[key] = value
-                break
-            }
-          })
-
-          if (subquery.length) {
-            acc[key] = Raw(
-              (a) =>
-                subquery
-                  .map((s, index) => `${a} ${s.operator} :${index}`)
-                  .join(" AND "),
-              subquery.map((s) => s.value)
-            )
-          }
-          break
-        default:
-          acc[key] = value
-          break
-      }
-
-      return acc
-    }, {} as Partial<Writable<TWhereKeys>>)
-  }
-
-  const query: ExtendedFindConfig<TEntity, TWhereKeys> = {
-    where: build(selector),
+): ExtendedFindConfig<TEntity> {
+  const query: ExtendedFindConfig<TEntity> = {
+    where: buildWhere<TWhereKeys, TEntity>(selector),
   }
 
   if ("deleted_at" in selector) {
@@ -90,19 +32,19 @@ export function buildQuery<TWhereKeys, TEntity = unknown>(
   }
 
   if ("skip" in config) {
-    query.skip = config.skip
+    ;(query as FindManyOptions<TEntity>).skip = config.skip
   }
 
   if ("take" in config) {
-    query.take = config.take
+    ;(query as FindManyOptions<TEntity>).take = config.take
   }
 
-  if ("relations" in config) {
-    query.relations = config.relations
+  if ("relations" in config && config.relations) {
+    query.relations = buildRelations<TEntity>(config.relations)
   }
 
   if ("select" in config) {
-    query.select = config.select
+    query.select = buildSelects(config.select as string[])
   }
 
   if ("order" in config) {
@@ -110,4 +52,98 @@ export function buildQuery<TWhereKeys, TEntity = unknown>(
   }
 
   return query
+}
+
+function buildWhere<TWhereKeys, TEntity>(constraints: TWhereKeys): any {
+  const where: FindOptionsWhere<TEntity> = {}
+  for (const [key, value] of Object.entries(constraints)) {
+    if (value === undefined) {
+      continue
+    }
+
+    if (value === null) {
+      where[key] = IsNull()
+      continue
+    }
+
+    if (value instanceof FindOperator) {
+      where[key] = value
+      continue
+    }
+
+    if (Array.isArray(value)) {
+      where[key] = In(value)
+      continue
+    }
+
+    if (typeof value === "object") {
+      where[key] = buildWhere<TWhereKeys[keyof TWhereKeys], TEntity>(value)
+      continue
+    }
+
+    const allowedModifiers = ["lt", "gt", "lte", "gte"]
+    if (allowedModifiers.indexOf(key.toLowerCase()) > -1) {
+      switch (key) {
+        case "lt":
+          where[key] = LessThan(value)
+          break
+        case "gt":
+          where[key] = MoreThan(value)
+          break
+        case "lte":
+          where[key] = LessThanOrEqual(value)
+          break
+        case "gte":
+          where[key] = MoreThanOrEqual(value)
+          break
+      }
+      continue
+    }
+
+    where[key] = value
+  }
+
+  return where
+}
+
+function buildSelects<TEntity>(
+  selectCollection: string[]
+): FindOptionsSelect<TEntity> {
+  return buildRelationsOrSelect(selectCollection) as FindOptionsSelect<TEntity>
+}
+
+function buildRelations<TEntity>(
+  relationCollection: string[]
+): FindOptionsRelations<TEntity> {
+  return buildRelationsOrSelect(
+    relationCollection
+  ) as FindOptionsRelations<TEntity>
+}
+
+function buildRelationsOrSelect<TEntity>(
+  collection: string[]
+): FindOptionsRelations<TEntity> | FindOptionsSelect<TEntity> {
+  const output: FindOptionsRelations<TEntity> = {}
+
+  for (const relation of collection) {
+    if (relation.indexOf(".") > -1) {
+      const nestedRelations = relation.split(".")
+      nestedRelations.reduce(
+        (acc: FindOptionsRelations<TEntity>, nestedRelation: string) => {
+          if (acc[nestedRelation]) {
+            return acc
+          }
+
+          acc[relation] = true
+          return acc
+        },
+        output
+      )
+      continue
+    }
+
+    output[relation] = true
+  }
+
+  return output
 }

@@ -114,7 +114,7 @@ class BatchJobService extends TransactionBaseService {
     config: FindConfig<BatchJob> = {}
   ): Promise<BatchJob | never> {
     const manager = this.manager_
-    const batchJobRepo = manager.getCustomRepository(this.batchJobRepository_)
+    const batchJobRepo = manager.withRepository(this.batchJobRepository_)
 
     const query = buildQuery({ id: batchJobId }, config)
     const batchJob = await batchJobRepo.findOne(query)
