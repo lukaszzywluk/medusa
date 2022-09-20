@@ -5,6 +5,7 @@ import {
   useAdminDeleteOrderEditItemChange,
   useAdminUpdateOrderEdit,
   useAdminRequestOrderEditConfirmation,
+  useAdminOrderEditLineItem,
 } from "../../../../src/"
 import { fixtures } from "../../../../mocks/data"
 import { createWrapper } from "../../../utils"
@@ -125,6 +126,36 @@ describe("useAdminRequestOrderEditConfirmation hook", () => {
           ...fixtures.get("order_edit"),
           requested_at: expect.any(String),
           status: 'requested'
+      })
+    )
+  })
+})
+
+describe("useAdminOrderEditLineItem hook", () => {
+  test("Created an order edit line item", async () => {
+    const { result, waitFor } = renderHook(
+      () => useAdminOrderEditLineItem(fixtures.get("order_edit").id),
+      {
+        wrapper: createWrapper(),
+      }
+    )
+
+    const payload = {
+      variant_id: "var_1",
+      quantity: 2,
+    }
+
+    result.current.mutate(payload)
+
+    await waitFor(() => result.current.isSuccess)
+
+    expect(result.current.data.response.status).toEqual(200)
+    expect(result.current.data).toEqual(
+      expect.objectContaining({
+        order_edit: {
+          ...fixtures.get("order_edit"),
+          ...payload,
+        },
       })
     )
   })
