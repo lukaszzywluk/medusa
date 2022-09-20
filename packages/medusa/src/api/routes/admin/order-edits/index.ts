@@ -14,6 +14,7 @@ import {
 import { OrderEdit } from "../../../../models"
 import { AdminPostOrderEditsOrderEditReq } from "./update-order-edit"
 import { AdminPostOrderEditsReq } from "./create-order-edit"
+import { AdminPostOrderEditsLineItemReq } from "./add-line-item"
 
 const route = Router()
 
@@ -44,6 +45,12 @@ export default (app) => {
     "/:id",
     transformBody(AdminPostOrderEditsOrderEditReq),
     middlewares.wrap(require("./update-order-edit").default)
+  )
+
+  route.post(
+    "/:id/items",
+    transformBody(AdminPostOrderEditsLineItemReq),
+    middlewares.wrap(require("./add-line-item").default)
   )
 
   route.delete("/:id", middlewares.wrap(require("./delete-order-edit").default))

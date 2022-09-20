@@ -3,7 +3,14 @@ import { FindConfig } from "../types/common"
 import { buildQuery, isDefined } from "../utils"
 import { MedusaError } from "medusa-core-utils"
 import { OrderEditRepository } from "../repositories/order-edit"
-import { Order, OrderEdit, OrderEditStatus } from "../models"
+import {
+  LineItem,
+  Order,
+  OrderEdit,
+  OrderEditItemChangeType,
+  OrderEditStatus,
+  OrderItemChange,
+} from "../models"
 import { TransactionBaseService } from "../interfaces"
 import {
   EventBusService,
@@ -336,13 +343,45 @@ export default class OrderEditService extends TransactionBaseService {
 
   async addLineItem(orderEditId: string, data: AddOrderEditLineItemInput) {
     return await this.atomicPhase_(async (manager) => {
-      // 1. generate new line item from data
-      // 2. generate change record (with new line item)
-
       const lineItemServiceTx = this.lineItemService_.withTransaction(manager)
       const orderEditItemChangeRepo = manager.getCustomRepository(
         this.orderItemChangeRepository_
       )
+
+      const orderEditRepo = manager.getCustomRepository(
+        this.orderEditRepository_
+      )
+
+      const orderEdit = await this.retrieve(orderEditId, {
+        relations: ["order", "changes"],
+      })
+
+      const regionId = orderEdit.order.region_id
+
+      // 1. generate new line item from data
+
+      const newItem = await lineItemServiceTx.generate(
+        data.variant_id,
+        regionId,
+        data.quantity,
+        {
+          metadata: data.metadata,
+        }
+      )
+
+      const lineItem = await lineItemServiceTx.create(newItem)
+
+      // 2. generate change record (with new line item)
+
+      const change = orderEditItemChangeRepo.create({
+        type: OrderEditItemChangeType.ITEM_ADD,
+        line_item_id: lineItem.id,
+        order_edit_id: orderEditId,
+      })
+
+      await orderEditItemChangeRepo.save(change)
+
+      // return this.retrieve(orderEditId)
     })
   }
 
