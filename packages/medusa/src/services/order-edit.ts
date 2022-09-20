@@ -13,12 +13,14 @@ import {
   TaxProviderService,
   TotalsService,
 } from "./index"
-import { CreateOrderEditInput, UpdateOrderEditInput } from "../types/order-edit"
+import { AddOrderEditLineItemInput, CreateOrderEditInput, UpdateOrderEditInput } from "../types/order-edit"
 import LineItemAdjustmentService from "./line-item-adjustment"
+import { OrderItemChangeRepository } from "../repositories/order-item-change"
 
 type InjectedDependencies = {
   manager: EntityManager
   orderEditRepository: typeof OrderEditRepository
+  orderItemChangeRepository: typeof OrderItemChangeRepository
   orderService: OrderService
   eventBusService: EventBusService
   totalsService: TotalsService
@@ -36,9 +38,12 @@ export default class OrderEditService extends TransactionBaseService {
     REQUESTED: "order-edit.requested",
   }
 
-  protected transactionManager_: EntityManager | undefined
   protected readonly manager_: EntityManager
+  protected transactionManager_: EntityManager | undefined
+
   protected readonly orderEditRepository_: typeof OrderEditRepository
+  protected readonly orderItemChangeRepository_: typeof OrderItemChangeRepository
+
   protected readonly orderService_: OrderService
   protected readonly lineItemService_: LineItemService
   protected readonly eventBusService_: EventBusService
@@ -50,6 +55,7 @@ export default class OrderEditService extends TransactionBaseService {
   constructor({
     manager,
     orderEditRepository,
+    orderItemChangeRepository,
     orderService,
     lineItemService,
     eventBusService,
@@ -63,6 +69,7 @@ export default class OrderEditService extends TransactionBaseService {
 
     this.manager_ = manager
     this.orderEditRepository_ = orderEditRepository
+    this.orderItemChangeRepository_ = orderItemChangeRepository
     this.orderService_ = orderService
     this.lineItemService_ = lineItemService
     this.eventBusService_ = eventBusService
@@ -325,6 +332,18 @@ export default class OrderEditService extends TransactionBaseService {
     orderEdit.total = totals.total
 
     return orderEdit
+  }
+
+  async addLineItem(orderEditId: string, data: AddOrderEditLineItemInput) {
+    return await this.atomicPhase_(async (manager) => {
+      // 1. generate new line item from data
+      // 2. generate change record (with new line item)
+
+      const lineItemServiceTx = this.lineItemService_.withTransaction(manager)
+      const orderEditItemChangeRepo = manager.getCustomRepository(
+        this.orderItemChangeRepository_
+      )
+    })
   }
 
   async deleteItemChange(
