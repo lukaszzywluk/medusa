@@ -368,7 +368,6 @@ export default class OrderEditService extends TransactionBaseService {
           "order.cart.discounts",
           "order.cart.discounts.rule",
           "order.region",
-          "changes",
         ],
       })
 
@@ -391,8 +390,8 @@ export default class OrderEditService extends TransactionBaseService {
         }
       )
 
-      let lineItem = await lineItemServiceTx.create(newItem)
-      lineItem = await lineItemServiceTx.retrieve(lineItem.id)
+      const { id: lineItemId } = await lineItemServiceTx.create(newItem)
+      const lineItem = await lineItemServiceTx.retrieve(lineItemId)
 
       // 2. generate line item adjustments
 
@@ -412,13 +411,13 @@ export default class OrderEditService extends TransactionBaseService {
 
       // 4. generate change record (with new line item)
 
-      const change = orderEditItemChangeRepo.create({
+      const itemChange = orderEditItemChangeRepo.create({
         type: OrderEditItemChangeType.ITEM_ADD,
         line_item_id: lineItem.id,
         order_edit_id: orderEditId,
       })
 
-      await orderEditItemChangeRepo.save(change)
+      await orderEditItemChangeRepo.save(itemChange)
 
       return this.retrieve(orderEditId)
     })
