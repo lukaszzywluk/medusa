@@ -371,6 +371,13 @@ export default class OrderEditService extends TransactionBaseService {
         ],
       })
 
+      if (!OrderEditService.isOrderEditActive(orderEdit)) {
+        throw new MedusaError(
+          MedusaError.Types.NOT_ALLOWED,
+          `Can not add an item to the edit with status ${orderEdit.status}`
+        )
+      }
+
       const regionId = orderEdit.order.region_id
 
       // 0. check inventory
@@ -529,6 +536,14 @@ export default class OrderEditService extends TransactionBaseService {
       clonedItemIds.map((id) => {
         return lineItemServiceTx.delete(id)
       })
+    )
+  }
+
+  private static isOrderEditActive(orderEdit: OrderEdit): boolean {
+    return (
+      orderEdit.status === OrderEditStatus.CONFIRMED ||
+      orderEdit.status === OrderEditStatus.CANCELED ||
+      orderEdit.status === OrderEditStatus.DECLINED
     )
   }
 }
