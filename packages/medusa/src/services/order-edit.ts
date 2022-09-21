@@ -540,7 +540,7 @@ export default class OrderEditService extends TransactionBaseService {
   }
 
   private static isOrderEditActive(orderEdit: OrderEdit): boolean {
-    return (
+    return !(
       orderEdit.status === OrderEditStatus.CONFIRMED ||
       orderEdit.status === OrderEditStatus.CANCELED ||
       orderEdit.status === OrderEditStatus.DECLINED
