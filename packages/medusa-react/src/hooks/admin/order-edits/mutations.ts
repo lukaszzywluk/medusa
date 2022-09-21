@@ -7,12 +7,12 @@ import {
   AdminOrderEditsRes,
   AdminPostOrderEditsOrderEditReq,
   AdminPostOrderEditsReq,
+  AdminPostOrderEditsLineItemReq,
 } from "@medusajs/medusa"
 
 import { buildOptions } from "../../utils/buildOptions"
 import { useMedusa } from "../../../contexts"
 import { adminOrderEditsKeys } from "."
-import { AdminPostOrderEditsLineItemReq } from "@medusajs/medusa/dist/api/routes/admin/order-edits/add-line-item"
 
 export const useAdminCreateOrderEdit = (
   options?: UseMutationOptions<

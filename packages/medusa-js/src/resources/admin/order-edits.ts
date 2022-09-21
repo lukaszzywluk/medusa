@@ -4,10 +4,12 @@ import {
   AdminOrderEditsRes,
   AdminPostOrderEditsOrderEditReq,
   AdminPostOrderEditsReq,
+  AdminOrderEditDeleteRes,
+  AdminPostOrderEditsOrderEditReq,
+  AdminPostOrderEditsLineItemReq,
 } from "@medusajs/medusa"
 import { ResponsePromise } from "../../typings"
 import BaseResource from "../base"
-import { AdminPostOrderEditsLineItemReq } from "@medusajs/medusa/dist/api/routes/admin/order-edits/add-line-item"
 
 class AdminOrderEditsResource extends BaseResource {
   retrieve(
