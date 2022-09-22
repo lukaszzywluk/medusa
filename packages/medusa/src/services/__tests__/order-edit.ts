@@ -80,10 +80,6 @@ const orderEditWithAddedLineItem = {
   },
 }
 
-const orderItemChangeRepositoryMock = MockRepository({
-  save: (f) => Promise.resolve(f),
-})
-
 const lineItemServiceMock = {
   ...LineItemServiceMock,
   list: jest.fn().mockImplementation(() => {
@@ -338,6 +334,6 @@ describe("OrderEditService", () => {
       LineItemAdjustmentServiceMock.createAdjustments
     ).toHaveBeenCalledTimes(1)
     expect(taxProviderServiceMock.createTaxLines).toHaveBeenCalledTimes(1)
-    expect(orderItemChangeRepositoryMock.save).toHaveBeenCalledTimes(1)
+    expect(orderEditItemChangeServiceMock.create).toHaveBeenCalledTimes(1)
   })
 })

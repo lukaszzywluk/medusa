@@ -1,6 +1,6 @@
 import { TransactionBaseService } from "../interfaces"
 import { OrderItemChangeRepository } from "../repositories/order-item-change"
-import { EntityManager, In } from "typeorm"
+import { DeepPartial, EntityManager, In } from "typeorm"
 import { EventBusService, LineItemService } from "./index"
 import { FindConfig } from "../types/common"
 import { OrderItemChange } from "../models"
@@ -66,6 +66,17 @@ export default class OrderEditItemChangeService extends TransactionBaseService {
     }
 
     return itemChange
+  }
+
+  async create(data: DeepPartial<OrderItemChange>): Promise<OrderItemChange> {
+    return await this.atomicPhase_(async (manager) => {
+      const orderItemChangeRepo = manager.getCustomRepository(
+        this.orderItemChangeRepository_
+      )
+
+      const itemChange = orderItemChangeRepo.create(data)
+      return await orderItemChangeRepo.save(itemChange)
+    })
   }
 
   async delete(itemChangeIds: string | string[]): Promise<void> {
