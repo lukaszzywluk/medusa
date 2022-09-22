@@ -18,6 +18,7 @@ type InjectedDependencies = {
 
 export default class OrderEditItemChangeService extends TransactionBaseService {
   static readonly Events = {
+    CREATED: "order-edit-item-change.CREATED",
     DELETED: "order-edit-item-change.DELETED",
   }
 
@@ -75,7 +76,15 @@ export default class OrderEditItemChangeService extends TransactionBaseService {
       )
 
       const itemChange = orderItemChangeRepo.create(data)
-      return await orderItemChangeRepo.save(itemChange)
+      const changeRecord = await orderItemChangeRepo.save(itemChange)
+
+      await this.eventBus_
+        .withTransaction(manager)
+        .emit(OrderEditItemChangeService.Events.CREATED, {
+          id: changeRecord.id,
+        })
+
+      return changeRecord
     })
   }
 

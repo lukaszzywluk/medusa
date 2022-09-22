@@ -48,7 +48,6 @@ export default class OrderEditService extends TransactionBaseService {
     UPDATED: "order-edit.updated",
     DECLINED: "order-edit.declined",
     REQUESTED: "order-edit.requested",
-    ITEM_ADDED: "order-edit.item-added",
   }
 
   protected readonly manager_: EntityManager
@@ -421,10 +420,6 @@ export default class OrderEditService extends TransactionBaseService {
         line_item_id: lineItem.id,
         order_edit_id: orderEditId,
       })
-
-      await this.eventBusService_
-        .withTransaction(manager)
-        .emit(OrderEditService.Events.ITEM_ADDED, { id: lineItemId })
 
       return this.retrieve(orderEditId)
     })
