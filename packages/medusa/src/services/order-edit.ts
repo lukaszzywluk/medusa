@@ -362,7 +362,7 @@ export default class OrderEditService extends TransactionBaseService {
        * Create new line item and refresh adjustments for all cloned order edit items
        */
 
-      const lineItem = await lineItemServiceTx.generate(
+      const lineItemData = await lineItemServiceTx.generate(
         data.variant_id,
         regionId,
         data.quantity,
@@ -371,6 +371,11 @@ export default class OrderEditService extends TransactionBaseService {
           order_edit_id: orderEditId,
         }
       )
+
+      let lineItem = await lineItemServiceTx.create(lineItemData)
+      lineItem = await lineItemServiceTx.retrieve(lineItem.id, {
+        relations: ["variant"],
+      })
 
       await this.refreshAdjustments(orderEditId)
 
@@ -402,7 +407,7 @@ export default class OrderEditService extends TransactionBaseService {
 
       await this.taxProviderService_
         .withTransaction(manager)
-        .createTaxLines(localCart, calcContext)
+        .createTaxLines([lineItem], calcContext)
 
       return this.retrieve(orderEditId)
     })
