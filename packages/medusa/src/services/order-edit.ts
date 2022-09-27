@@ -529,7 +529,19 @@ export default class OrderEditService extends TransactionBaseService {
       this.lineItemAdjustmentService_.withTransaction(manager)
 
     const orderEdit = await this.retrieve(orderEditId, {
-      relations: ["items", "items.adjustments"],
+      relations: [
+        "items",
+        "items.adjustments",
+        "items.tax_lines",
+        "order",
+        "order.customer",
+        "order.discounts",
+        "order.discounts.rule",
+        "order.gift_cards",
+        "order.region",
+        "order.shipping_address",
+        "order.shipping_methods",
+      ],
     })
 
     const clonedItemAdjustmentIds: string[] = []
@@ -542,7 +554,6 @@ export default class OrderEditService extends TransactionBaseService {
       }
     })
 
-    // TODO: move to lineItemService.delete adjustments
     await lineItemAdjustmentServiceTx.delete(clonedItemAdjustmentIds)
 
     const localCart = {
