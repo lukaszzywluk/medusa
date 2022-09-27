@@ -152,7 +152,7 @@ class LineItemAdjustmentService extends TransactionBaseService {
    * @return the result of the delete operation
    */
   async delete(
-    selectorOrId: string | FilterableLineItemAdjustmentProps
+    selectorOrId: string | string[] | FilterableLineItemAdjustmentProps
   ): Promise<void> {
     return this.atomicPhase_(async (manager) => {
       const lineItemAdjustmentRepo: LineItemAdjustmentRepository =
